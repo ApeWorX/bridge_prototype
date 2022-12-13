@@ -1,15 +1,32 @@
 from collections import defaultdict
 from contextlib import contextmanager
 from itertools import chain
+from typing import List
 
 import pytest
 
+from ape.api import NetworkAPI, ProviderContextManager
 from ape.types import LogFilter
+from ape_test.provider import LocalProvider
 
 
 class Bridge:
-    def __init__(self, networks):
-        self._networks = networks
+    def __init__(self, *network_names: str):
+        self._providers = {}
+
+        for network_name in network_names:
+            network = NetworkAPI.create_adhoc_network()
+            network.name = network_name
+
+            provider = LocalProvider(
+                name="test",
+                network=network,
+                provider_settings={},
+                data_folder=network.data_folder,
+                request_header=network.request_header,
+            )
+
+            self._providers[network_name] = provider
 
         # For each provider (later, network) we save the contracts we deployed to it via the bridge
         # Dict[str, Contract]
@@ -20,17 +37,19 @@ class Bridge:
         self._listeners = defaultdict(dict)
 
     @contextmanager
-    def provider(self, name):
+    def use_network(self, network_name):
         try:
-            with self._networks.ethereum.local.use_provider(name) as provider:
+            with ProviderContextManager(self._providers[network_name]) as provider:
                 yield provider
 
                 events = []
-                for contract in self._contracts[name]:
+                addresses = []
+                for contract in self._contracts[network_name]:
+                    addresses.append(contract.address)
                     events.extend(contract.contract_type.events)
 
                 log_filter = LogFilter(
-                    addresses=[contract.address for contract in self._contracts[name]],
+                    addresses=addresses,
                     events=events,
                     start_block=provider.chain_manager.blocks.height,
                     stop_block=provider.chain_manager.blocks.height + 100,
@@ -53,10 +72,10 @@ class Bridge:
     def add_listener(self, contract, event, func):
         self._listeners[contract.address][event.name] = func
 
-    def deploy_contract(self, contract, owner, provider):
-        with self._networks.ethereum.local.use_provider(provider):
+    def deploy_contract(self, contract, owner, network_name):
+        with ProviderContextManager(self._providers[network_name]):
             result = owner.deploy(contract)
-            self._contracts[provider].append(result)
+            self._contracts[network_name].append(result)
             return result
 
 
@@ -67,14 +86,14 @@ def owner(accounts):
 
 @pytest.fixture(scope="session")
 def bridge(networks):
-    return Bridge(networks)
+    return Bridge(networks, "testnet1", "testnet2")
 
 
 @pytest.fixture(scope="session")
 def sender_contract(project, owner, bridge):
-    return bridge.deploy_contract(project.Sender, owner, "test")
+    return bridge.deploy_contract(project.Sender, owner, "testnet1")
 
 
 @pytest.fixture(scope="session")
 def receiver_contract(project, owner, bridge):
-    return bridge.deploy_contract(project.Receiver, owner, "test")
+    return bridge.deploy_contract(project.Receiver, owner, "testnet2")
