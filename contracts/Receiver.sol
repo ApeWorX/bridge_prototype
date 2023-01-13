@@ -1,6 +1,6 @@
 pragma solidity ^0.8.17;
 
-import {IConnext} from "@connext/contracts/core/connext/interfaces/IConnext.sol";
+import {IConnext} from "@connext/core/connext/interfaces/IConnext.sol";
 import {IXReceiver} from "@connext/core/connext/interfaces/IXReceiver.sol";
 
 contract Receiver is IXReceiver {
