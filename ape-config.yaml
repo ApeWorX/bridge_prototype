@@ -1,3 +1,11 @@
 name: Bridge Example
 plugins:
   - name: vyper
+  - name: solidity
+dependencies:
+  - name: Connext
+    github: connext/monorepo
+    version: v0.2.1-rc.12
+solidity:
+  import_remapping:
+    - "@connext=Connext/packages/deployments/contracts/contracts"

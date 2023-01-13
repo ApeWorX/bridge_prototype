@@ -18,29 +18,8 @@ class Bridge:
         chain_id = 1
         network_id = 1
         for network_name in network_names:
-            ethereum_class = None
-            for plugin_name, ecosystem_class in NetworkAPI.plugin_manager.ecosystems:
-                if plugin_name == "ethereum":
-                    ethereum_class = ecosystem_class
-                    break
-
-            if ethereum_class is None:
-                raise Exception("Core Ethereum plugin missing.")
-
-            data_folder = mkdtemp()
-            request_header = NetworkAPI.config_manager.REQUEST_HEADER
-
-            network_cls = create_network_type(chain_id, network_id)
-            network = network_cls(
-                name=network_name,
-                ecosystem=ethereum_class(
-                    data_folder=data_folder,
-                    request_header=request_header,
-                ),
-                data_folder=data_folder,
-                request_header=request_header,
-                _default_provider="test",
-            )
+            network = NetworkAPI.create_adhoc_network()
+            network.name = network_name
 
             provider = LocalProvider(
                 name="test",
