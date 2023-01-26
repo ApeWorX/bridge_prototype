@@ -6,7 +6,7 @@ from typing import List
 
 import pytest
 
-from ape.api import NetworkAPI, ProviderContextManager, create_network_type
+from ape.api import NetworkAPI, ProviderContextManager, create_network_type, Address
 from ape.types import LogFilter
 from ape_test.provider import LocalProvider
 
@@ -75,9 +75,9 @@ class Bridge:
     def add_listener(self, contract, event, func):
         self._listeners[contract.address][event.name] = func
 
-    def deploy_contract(self, contract, owner, network_name):
+    def deploy_contract(self, contract, owner, network_name, *args):
         with ProviderContextManager(self._providers[network_name]):
-            result = owner.deploy(contract)
+            result = owner.deploy(contract, *args)
             self._contracts[network_name].append(result)
             return result
 
@@ -94,7 +94,12 @@ def bridge():
 
 @pytest.fixture(scope="session")
 def sender_contract(project, owner, bridge):
-    return bridge.deploy_contract(project.Sender, owner, "testnet1")
+    return bridge.deploy_contract(
+        project.Sender,
+        owner,
+        "testnet1",
+        Address("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"),
+    )
 
 
 @pytest.fixture(scope="session")

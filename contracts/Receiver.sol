@@ -13,7 +13,7 @@ contract Receiver is IXReceiver {
 	    address _originSender,
 	    uint32 _origin,
 	    bytes memory _callData
-	) external {
+	) external returns (bytes memory) {
 		received = true;
 	}
 }

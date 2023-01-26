@@ -10,14 +10,14 @@ contract Sender {
 	}
 
 	function transfer(uint32 destination, address target) external payable {
-		connext.xcall{}(
+		connext.xcall{value: 0}(
 			destination,
 			target,
 			address(0),
 			msg.sender,
 			0,
 			0,
-			null,
+			"0x"
 		);
 	}
 }

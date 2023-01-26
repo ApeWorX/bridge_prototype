@@ -1,10 +1,23 @@
 name: Bridge Example
 plugins:
   - name: solidity
+  - name: hardhat
+hardhat:
+  port: auto
+  gas_limit: max
 dependencies:
   - name: Connext
     github: connext/monorepo
     version: v0.2.1-rc.12
+    contracts_folder: packages/deployments/contracts/contracts
+  - name: OpenZeppelin
+    github: OpenZeppelin/openzeppelin-contracts
+    version: v4.8.1
+  - name: OpenZeppelinUpgrade
+    github: OpenZeppelin/openzeppelin-contracts-upgradeable
+    version: v4.8.1
 solidity:
   import_remapping:
-    - "@connext=Connext/v0.2.1-rc.12/packages/deployments/contracts/contracts"
+    - "@connext=Connext/v0.2.1-rc.12"
+    - "@openzeppelin/contracts-upgradeable=OpenZeppelinUpgrade/v4.8.1"
+    - "@openzeppelin/contracts=OpenZeppelin/v4.8.1"
