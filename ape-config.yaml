@@ -2,6 +2,10 @@ name: Bridge Example
 plugins:
   - name: solidity
   - name: hardhat
+# ethereum:
+#   default_network: mainnet-fork
+#   mainnet_fork:
+#     default_provider: hardhat
 hardhat:
   port: auto
   gas_limit: max
@@ -16,6 +20,9 @@ dependencies:
   - name: OpenZeppelinUpgrade
     github: OpenZeppelin/openzeppelin-contracts-upgradeable
     version: v4.8.1
+  - name: ApeConnext
+    local: tests/utils/
+    contracts_folder: contracts
 solidity:
   import_remapping:
     - "@connext=Connext/v0.2.1-rc.12"

@@ -2,8 +2,8 @@ import pytest
 
 
 def test_bridge(bridge, owner, sender_contract, receiver_contract):
-    with bridge.use_network("testnet1"):
+    with bridge.use_network("A"):
         sender_contract.transfer(0, receiver_contract.address, sender=owner)
 
-    with bridge.use_network("testnet2"):
-        assert receiver_contract.transferrer() == sender_contract.address
+    with bridge.use_network("A"):
+        assert receiver_contract.received()
