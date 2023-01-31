@@ -5,3 +5,4 @@ contracts/.cache/
 .python-version
 **/__pycache__
 .hypothesis*
+hardhat.config.js
