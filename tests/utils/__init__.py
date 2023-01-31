@@ -76,17 +76,17 @@ class ConnextBridge:
             chain_id += 1
             network_id += 1
 
-    def connext(self, network_name: str) -> "Contract":
+    def get_connext_address(self, network_name: str) -> "Address":
         """
-        Returns the Connext contract instance deployed for the given network.
+        Returns the Connext contract address for the given network.
         """
         if network_name not in self.networks:
             raise ValueError
 
-        return self.networks[network_name].connext
+        return self.networks[network_name].connext.address
 
     @contextmanager
-    def bridge(self, network_name: str):
+    def use(self, network_name: str):
         if network_name not in self.networks:
             raise ValueError
 

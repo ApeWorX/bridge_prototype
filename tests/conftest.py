@@ -23,7 +23,7 @@ def sender_contract(project, owner, bridge):
         project.Sender,
         owner,
         NETWORK_A,
-        bridge.connext(NETWORK_B),
+        bridge.get_connext_address(NETWORK_B),
     )
 
 
