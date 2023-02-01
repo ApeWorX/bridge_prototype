@@ -1,5 +1,7 @@
 import pytest
 
+from tests.conftest import NETWORK_A, NETWORK_B
+
 
 def test_bridge(bridge, owner, sender_contract, receiver_contract):
     with bridge.use(NETWORK_A) as provider:

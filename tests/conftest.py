@@ -14,7 +14,7 @@ def owner(accounts):
 
 @pytest.fixture(scope="session")
 def bridge(owner):
-    return ConnextBridge(NETWORK_A, NETWORK_B)
+    return ConnextBridge(owner, NETWORK_A, NETWORK_B)
 
 
 @pytest.fixture(scope="session")

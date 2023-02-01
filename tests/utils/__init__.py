@@ -29,7 +29,7 @@ class ConnextBridge:
     networks: dict[str, ConnextNetwork] = dict()
 
     def __init__(self, owner, *network_names: list[str]):
-        chain_id = 0
+        chain_id = 31337
         network_id = 0
 
         ethereum_class = None
@@ -65,7 +65,7 @@ class ConnextBridge:
             )
             provider.connect()
 
-            self.networks[name] = ConnextNetwork(
+            self.networks[network_name] = ConnextNetwork(
                 provider=provider,
                 connext=owner.deploy(
                     ape.project.dependencies["ApeConnext"]["local"].Connext,
@@ -73,7 +73,7 @@ class ConnextBridge:
                 ),
             )
 
-            chain_id += 1
+            # chain_id += 1
             network_id += 1
 
     def get_connext_address(self, network_name: str) -> "Address":
@@ -147,6 +147,13 @@ class ConnextBridge:
                 )
 
     def deploy(self, contract, owner, network_name, *args):
-        result = owner.deploy(contract, *args)
-        self.contracts[network_name][HexBytes(result.address)] = result
+        if network_name not in self.networks:
+            raise ValueError
+
+        network = self.networks[network_name]
+
+        with ProviderContextManager(provider=network.provider):
+            result = owner.deploy(contract, *args)
+            network.contracts[HexBytes(result.address)] = result
+
         return result

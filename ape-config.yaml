@@ -2,10 +2,6 @@ name: Bridge Example
 plugins:
   - name: solidity
   - name: hardhat
-# ethereum:
-#   default_network: mainnet-fork
-#   mainnet_fork:
-#     default_provider: hardhat
 hardhat:
   port: auto
   gas_limit: max
