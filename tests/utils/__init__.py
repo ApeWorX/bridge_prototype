@@ -32,6 +32,8 @@ class ConnextBridge:
         chain_id = 31337
         network_id = 0
 
+        port = 8545
+
         ethereum_class = None
         for plugin_name, ecosystem_class in NetworkAPI.plugin_manager.ecosystems:
             if plugin_name == "ethereum":
@@ -46,7 +48,7 @@ class ConnextBridge:
             request_header = NetworkAPI.config_manager.REQUEST_HEADER
 
             network = create_network_type(chain_id, network_id)(
-                name="hardhat",
+                name=network_name,
                 ecosystem=ethereum_class(
                     data_folder=data_folder,
                     request_header=request_header,
@@ -56,10 +58,15 @@ class ConnextBridge:
                 _default_provider="hardhat",
             )
 
+            # TODO: Open a new PR to allow NetworkAPI to have a default-config
+            #       see NetworkAPI.config, the default is just {} currently.
+            #       This direct assignment hack gets around that.
+            network.__dict__["gas_limit"] = "max"
+
             provider = HardhatProvider(
                 name="hardhat",
                 network=network,
-                provider_settings=HardhatNetworkConfig(),
+                provider_settings=HardhatNetworkConfig(port=port),
                 data_folder=network.data_folder,
                 request_header=network.request_header,
             )
@@ -73,10 +80,12 @@ class ConnextBridge:
                 ),
             )
 
+            port += 1
+
             # chain_id += 1
             network_id += 1
 
-    def get_connext_address(self, network_name: str) -> "Address":
+    def at(self, network_name: str) -> "Address":
         """
         Returns the Connext contract address for the given network.
         """
@@ -84,6 +93,13 @@ class ConnextBridge:
             raise ValueError
 
         return self.networks[network_name].connext.address
+
+    @contextmanager
+    def provider(self, network_name: str) -> "Provider":
+        if network_name not in self.networks:
+            raise ValueError
+
+        yield self.networks[network_name].provider
 
     @contextmanager
     def use(self, network_name: str):
@@ -146,14 +162,9 @@ class ConnextBridge:
                     sender=origin_sender,
                 )
 
-    def deploy(self, contract, owner, network_name, *args):
+    def register(self, network_name: str, contract: "Contract"):
         if network_name not in self.networks:
             raise ValueError
 
         network = self.networks[network_name]
-
-        with ProviderContextManager(provider=network.provider):
-            result = owner.deploy(contract, *args)
-            network.contracts[HexBytes(result.address)] = result
-
-        return result
+        network.contracts[HexBytes(contract.address)] = contract

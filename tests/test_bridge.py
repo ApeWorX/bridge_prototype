@@ -1,11 +1,15 @@
 import pytest
 
-from tests.conftest import NETWORK_A, NETWORK_B
+from tests.conftest import NETWORK_PING, NETWORK_PONG
 
 
-def test_bridge(bridge, owner, sender_contract, receiver_contract):
-    with bridge.use(NETWORK_A) as provider:
-        sender_contract.transfer(0, receiver_contract.address, sender=owner)
+def test_bridge(bridge, owner, ping, pong):
+    with bridge.use(NETWORK_PING) as provider:
+        ping.sendPing(sender=owner)
 
-    with bridge.use(NETWORK_B) as provider:
-        assert receiver_contract.received()
+    assert pong.pings() == 1
+
+    with bridge.use(NETWORK_PONG) as provider:
+        pong.sendPong()
+
+    assert ping.pongs() == 1

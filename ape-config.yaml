@@ -2,6 +2,11 @@ name: Bridge Example
 plugins:
   - name: solidity
   - name: hardhat
+# ethereum:
+#   default_network: foobar
+#   foobar:
+#     default_provider: hardhat
+#     gas_limit: max
 hardhat:
   port: auto
   gas_limit: max
