@@ -3,8 +3,8 @@ import pytest
 from .utils import ConnextBridge
 
 
-NETWORK_PING = "network-ping"
-NETWORK_PONG = "network-pong"
+NETWORK_PING = "network_ping"
+NETWORK_PONG = "network_pong"
 
 
 @pytest.fixture(scope="session")
