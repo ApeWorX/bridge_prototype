@@ -94,12 +94,11 @@ class ConnextBridge:
 
         return self.networks[network_name].connext.address
 
-    @contextmanager
     def provider(self, network_name: str) -> "Provider":
         if network_name not in self.networks:
             raise ValueError
 
-        yield self.networks[network_name].provider
+        return ProviderContextManager(provider=self.networks[network_name].provider)
 
     @contextmanager
     def use(self, network_name: str):
@@ -112,10 +111,10 @@ class ConnextBridge:
             yield provider
 
             log_filter = LogFilter(
-                addresses=[self.connext.address],
-                events=self.connext.contract_type.events,
-                start_block=self.provider.chain_manager.blocks.height,
-                stop_block=self.provider.chain_manager.blocks.height + 100,
+                addresses=[network.connext.address],
+                events=network.connext.contract_type.events,
+                start_block=provider.chain_manager.blocks.height,
+                stop_block=provider.chain_manager.blocks.height + 100,
             )
 
             for log in provider.get_contract_logs(log_filter):
@@ -165,6 +164,8 @@ class ConnextBridge:
     def register(self, network_name: str, contract: "Contract"):
         if network_name not in self.networks:
             raise ValueError
+
+        assert contract.is_contract
 
         network = self.networks[network_name]
         network.contracts[HexBytes(contract.address)] = contract
