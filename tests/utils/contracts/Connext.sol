@@ -42,7 +42,6 @@ contract Connext {
 		uint256 _slippage,
 		bytes memory _callData
 	) external payable returns (bytes32) {
-
 		TransferInfo memory params = TransferInfo({
 	      to: _to,
 	      callData: _callData,

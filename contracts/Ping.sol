@@ -23,7 +23,7 @@ contract Ping is IXReceiver {
 	}
 
 	modifier isAuthenticated() {
-		require(msg.sender == owner);
+		require(msg.sender == owner, "Unauthorized sender");
 		_;
 	}
 
@@ -34,7 +34,7 @@ contract Ping is IXReceiver {
 		_;
 	}
 
-	function sendPing() external isAuthenticated() payable {
+	function sendPing() external isAuthenticated() {
 		connext.xcall{value: 0}(
 			authenticatedDomain,
 			authenticatedSender,

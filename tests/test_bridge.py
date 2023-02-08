@@ -7,9 +7,9 @@ def test_bridge(bridge, owner, ping, pong):
     with bridge.use(NETWORK_PING) as provider:
         ping.sendPing(sender=owner)
 
-    assert pong.pings() == 1
+    with bridge.use(NETWORK_PONG) as provider:
+        assert pong.pings() == 1
+        pong.sendPong(sender=owner)
 
     with bridge.use(NETWORK_PONG) as provider:
-        pong.sendPong()
-
-    assert ping.pongs() == 1
+        assert ping.pongs() == 1

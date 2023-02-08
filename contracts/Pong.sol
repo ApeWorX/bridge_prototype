@@ -34,7 +34,7 @@ contract Pong is IXReceiver {
 		_;
 	}
 
-	function sendPong() external isAuthenticated() payable {
+	function sendPong() external isAuthenticated() {
 		connext.xcall{value: 0}(
 			authenticatedDomain,
 			authenticatedSender,
