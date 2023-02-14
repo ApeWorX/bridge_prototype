@@ -31,7 +31,6 @@ class ConnextBridge:
     def __init__(self, owner, *network_names: list[str]):
         chain_id = 31337
         network_id = 0
-
         port = 8545
 
         ethereum_class = None
@@ -72,17 +71,16 @@ class ConnextBridge:
             )
             provider.connect()
 
-            self.networks[network_name] = ConnextNetwork(
-                provider=provider,
-                connext=owner.deploy(
-                    ape.project.dependencies["ApeConnext"]["local"].Connext,
-                    required_confirmations=0,
-                ),
-            )
+            with ProviderContextManager(provider=provider) as provider:
+                self.networks[network_name] = ConnextNetwork(
+                    provider=provider,
+                    connext=owner.deploy(
+                        ape.project.dependencies["ApeConnext"]["local"].Connext,
+                        required_confirmations=0,
+                    ),
+                )
 
             port += 1
-
-            # chain_id += 1
             network_id += 1
 
     def at(self, network_name: str) -> "Address":
@@ -133,10 +131,10 @@ class ConnextBridge:
 
                 (
                     origin_domain,
-                    _,  # destination_domain
+                    destination_domain,
                     _,  # canonical_domain
                     to_addr,
-                    _,  # delegate_addr
+                    delegate_addr,
                     _,  # receive_local
                     calldata,
                     _,  # slippage
@@ -147,19 +145,33 @@ class ConnextBridge:
                     _,  # canonical_id
                 ) = event_args["params"]
 
-                to_addr = HexBytes(to_addr)
-                if to_addr not in network.contracts:
-                    raise ValueError(f"Unhandled address {to_addr}")
+                destination_network = None
+                for other_network in self.networks.values():
+                    other_network_id = other_network.provider.network.network_id
+                    if other_network_id == destination_domain:
+                        destination_network = other_network
+                        break
 
-                contracts[to_addr].xReceive(
-                    transfer_id,
-                    amount,
-                    asset,
-                    origin_sender,
-                    origin_domain,
-                    calldata,
-                    sender=origin_sender,
-                )
+                if destination_network is None:
+                    raise ValueError(f"Unhandled domain {destination_domain}")
+
+                to_addr = HexBytes(to_addr)
+                if to_addr not in destination_network.contracts:
+                    raise ValueError(f"Unhandled address {str(to_addr)}")
+
+                with ProviderContextManager(provider=destination_network.provider):
+                    destination_network.contracts[to_addr].xReceive(
+                        transfer_id,
+                        amount,
+                        asset,
+                        origin_sender,
+                        origin_domain,
+                        calldata,
+                        # FIXME: Don't think delegate is supposed to be used
+                        #        this way. Need to make sure we pass owner
+                        #        around correctly in xcall()/XCalled.
+                        sender=delegate_addr,
+                    )
 
     def register(self, network_name: str, contract: "Contract"):
         if network_name not in self.networks:
@@ -167,5 +179,14 @@ class ConnextBridge:
 
         assert contract.is_contract
 
+        for network in self.networks.values():
+            if contract.address == network.connext.address:
+                raise Exception
+
         network = self.networks[network_name]
-        network.contracts[HexBytes(contract.address)] = contract
+
+        address = HexBytes(contract.address)
+        if address in network.contracts:
+            raise ValueError("Contract already deployed on this network")
+
+        network.contracts[address] = contract

@@ -7,19 +7,13 @@ contract Ping is IXReceiver {
 	uint256  public pongs;
 	IConnext public immutable connext;
 	address  public immutable owner;
-	uint32   public immutable authenticatedDomain;
-	address  public immutable authenticatedSender;
 
-	constructor(
-		IConnext _connext,
-		address _owner,
-		uint32 _origin,
-		address _sender
-	) {
+	uint32  public authenticatedDomain;
+	address public authenticatedSender;
+
+	constructor(IConnext _connext, address _owner) {
 		connext = _connext;
 		owner = _owner;
-		authenticatedDomain = _origin;
-		authenticatedSender = _sender;
 	}
 
 	modifier isAuthenticated() {
@@ -28,10 +22,18 @@ contract Ping is IXReceiver {
 	}
 
 	modifier isBridgeAuthenticated(uint32 _origin, address _sender) {
-		require(msg.sender == address(connext));
+		require(msg.sender == owner);
 		require(_origin == authenticatedDomain, "Unauthorized origin domain");
 		require(_sender == authenticatedSender, "Unauthorized origin sender");
 		_;
+	}
+
+	function authenticate(
+		uint32 _origin,
+		address _sender
+	) external isAuthenticated() {
+		authenticatedDomain = _origin;
+		authenticatedSender = _sender;
 	}
 
 	function sendPing() external isAuthenticated() {

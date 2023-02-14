@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import pytest
 
 from .utils import ConnextBridge
@@ -18,30 +20,44 @@ def bridge(owner):
 
 
 @pytest.fixture(scope="session")
-def ping(project, owner, bridge):
+def contracts(project, owner, bridge):
+    @dataclass
+    class Contracts:
+        Ping: "Contract" = None
+        Pong: "Contract" = None
+
+    contracts = Contracts()
+
     with bridge.provider(NETWORK_PING) as provider:
-        contract = owner.deploy(
+        contracts.Ping = owner.deploy(
             project.Ping,
             bridge.at(NETWORK_PING),
             owner,
-            provider.network.chain_id,
-            bridge.at(NETWORK_PONG),
         )
 
-        bridge.register(NETWORK_PING, contract)
-        return contract
+        bridge.register(NETWORK_PING, contracts.Ping)
 
-
-@pytest.fixture(scope="session")
-def pong(project, owner, bridge):
     with bridge.provider(NETWORK_PONG) as provider:
-        contract = owner.deploy(
+        contracts.Pong = owner.deploy(
             project.Pong,
             bridge.at(NETWORK_PONG),
             owner,
-            provider.network.chain_id,
-            bridge.at(NETWORK_PING),
         )
 
-        bridge.register(NETWORK_PONG, contract)
-        return contract
+        bridge.register(NETWORK_PONG, contracts.Pong)
+
+    with bridge.provider(NETWORK_PING) as provider:
+        contracts.Ping.authenticate(
+            bridge.networks[NETWORK_PONG].provider.network.network_id,
+            contracts.Pong.address,
+            sender=owner,
+        )
+
+    with bridge.provider(NETWORK_PONG) as provider:
+        contracts.Ping.authenticate(
+            bridge.networks[NETWORK_PING].provider.network.network_id,
+            contracts.Ping.address,
+            sender=owner,
+        )
+
+    return contracts
