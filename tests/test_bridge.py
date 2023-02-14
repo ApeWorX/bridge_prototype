@@ -11,5 +11,5 @@ def test_bridge(bridge, owner, contracts):
         assert contracts.Pong.pings() == 1
         contracts.Pong.sendPong(sender=owner)
 
-    with bridge.use(NETWORK_PONG) as provider:
+    with bridge.use(NETWORK_PING) as provider:
         assert contracts.Ping.pongs() == 1
