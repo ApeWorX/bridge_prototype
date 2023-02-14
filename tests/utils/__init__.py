@@ -160,17 +160,18 @@ class ConnextBridge:
                     raise ValueError(f"Unhandled address {str(to_addr)}")
 
                 with ProviderContextManager(provider=destination_network.provider):
+                    from ape import accounts
+
                     destination_network.contracts[to_addr].xReceive(
                         transfer_id,
                         amount,
                         asset,
                         origin_sender,
-                        origin_domain,
+                        # FIXME: origin_domain did not have the right value?
+                        network.provider.network.network_id,
                         calldata,
-                        # FIXME: Don't think delegate is supposed to be used
-                        #        this way. Need to make sure we pass owner
-                        #        around correctly in xcall()/XCalled.
-                        sender=delegate_addr,
+                        # FIXME: Get actual owner AccountAPI in a better way
+                        sender=accounts.test_accounts[0],
                     )
 
     def register(self, network_name: str, contract: "Contract"):
