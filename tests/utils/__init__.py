@@ -99,7 +99,7 @@ class ConnextBridge:
         return ProviderContextManager(provider=self.networks[network_name].provider)
 
     @contextmanager
-    def use(self, network_name: str):
+    def connect(self, network_name: str):
         if network_name not in self.networks:
             raise ValueError
 

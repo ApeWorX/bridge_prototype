@@ -61,3 +61,13 @@ def contracts(project, owner, bridge):
         )
 
     return contracts
+
+
+@pytest.fixture(scope="session")
+def ping(contracts):
+    return contracts.Ping
+
+
+@pytest.fixture(scope="session")
+def pong(contracts):
+    return contracts.Pong
