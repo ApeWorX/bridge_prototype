@@ -29,7 +29,7 @@ contract Pong is IXReceiver {
 	}
 
 	function authenticate(
-		uint32 _origin,
+		uint32  _origin,
 		address _sender
 	) external isAuthenticated() {
 		authenticatedDomain = _origin;
@@ -53,7 +53,7 @@ contract Pong is IXReceiver {
 	    uint256 /* _amount */,
 	    address /* _asset */,
 	    address _sender,
-	    uint32 _origin,
+	    uint32  _origin,
 	    bytes memory /* _callData */
 	) external isBridgeAuthenticated(_origin, _sender) returns (bytes memory) {
 		pings++;

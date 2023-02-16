@@ -2,7 +2,9 @@ import os
 import shutil
 from collections import defaultdict
 from contextlib import contextmanager
+from copy import copy
 from dataclasses import dataclass, field
+from functools import wraps
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import List
@@ -22,7 +24,11 @@ class ConnextNetwork:
 
     @property
     def name(self) -> str:
-        return self.provider.name
+        return self.provider.network.name
+
+    @property
+    def id(self) -> int:
+        return self.provider.network.network_id
 
 
 class ConnextBridge:
@@ -30,7 +36,7 @@ class ConnextBridge:
 
     def __init__(self, owner, *network_names: list[str]):
         chain_id = 31337
-        network_id = 0
+        network_id = 1
         port = 8545
 
         ethereum_class = None
@@ -40,7 +46,7 @@ class ConnextBridge:
                 break
 
         if ethereum_class is None:
-            raise Exception("Core Ethereum plugin missing.")
+            raise RuntimeError("Core Ethereum plugin missing.")
 
         for network_name in set(network_names):
             data_folder = mkdtemp()
@@ -76,24 +82,15 @@ class ConnextBridge:
                     provider=provider,
                     connext=owner.deploy(
                         ape.project.dependencies["ApeConnext"]["local"].Connext,
-                        required_confirmations=0,
+                        network_id,
                     ),
                 )
 
             port += 1
             network_id += 1
 
-    def at(self, network_name: str) -> "Address":
-        """
-        Returns the Connext contract address for the given network.
-        """
-        if network_name not in self.networks:
-            raise ValueError
-
-        return self.networks[network_name].connext.address
-
     @contextmanager
-    def connect(self, network_name: str):
+    def use_network(self, network_name: str) -> "ProviderAPI":
         if network_name not in self.networks:
             raise ValueError
 
@@ -113,6 +110,7 @@ class ConnextBridge:
                 event_name = log.event_name
                 event_args = log.event_arguments
 
+                # NOTE: Only dealing with XCalled for the demo
                 if event_name != network.connext.XCalled.name:
                     continue
 
@@ -128,7 +126,7 @@ class ConnextBridge:
                     destination_domain,
                     _,  # canonical_domain
                     to_addr,
-                    delegate_addr,
+                    _,  # delegate_addr,
                     _,  # receive_local
                     calldata,
                     _,  # slippage
@@ -155,35 +153,50 @@ class ConnextBridge:
 
                 network.processed_events.add(transfer_id)
 
-                with self.connect(destination_network.provider.network.name):
-                    from ape import accounts
-
+                with self.use_network(destination_network.name):
                     destination_network.contracts[to_addr].xReceive(
                         transfer_id,
                         amount,
                         asset,
                         origin_sender,
-                        # FIXME: origin_domain did not have the right value?
-                        network.provider.network.network_id,
+                        origin_domain,
                         calldata,
                         # FIXME: Get actual owner AccountAPI in a better way
-                        sender=accounts.test_accounts[0],
+                        sender=ape.accounts.test_accounts[0],
                     )
 
-    def register(self, network_name: str, contract: "Contract"):
-        if network_name not in self.networks:
-            raise ValueError
+    @staticmethod
+    def requires_bridging(fn):
+        @wraps(fn)
+        def wrapper(self, *args, **kwargs):
+            network_name = ape.networks.active_provider.network.name
+            if network_name not in self.networks:
+                raise ValueError("Active network is not a bridged network")
+            return fn(self, self.networks[network_name], *args, **kwargs)
 
+        return wrapper
+
+    @requires_bridging
+    def register_contract(self, network: ConnextNetwork, contract: "Contract"):
+        """
+        Registers a contract with the bridge that has been deployed on the
+        active network.
+
+        You must call this within a `use_provider()` context.
+        """
         assert contract.is_contract
 
-        for network in self.networks.values():
-            if contract.address == network.connext.address:
-                raise Exception
+        if contract.address == network.connext.address:
+            raise ValueError("Only user contracts should be registered")
 
-        network = self.networks[network_name]
+        network.contracts[HexBytes(contract.address)] = contract
 
-        address = HexBytes(contract.address)
-        if address in network.contracts:
-            raise ValueError("Contract already deployed on this network")
+    @property
+    @requires_bridging
+    def connext(self, network: ConnextNetwork) -> "Address":
+        """
+        Returns the Connext contract for the given network.
 
-        network.contracts[address] = contract
+        You must call this within a `use_provider()` context.
+        """
+        return network.connext

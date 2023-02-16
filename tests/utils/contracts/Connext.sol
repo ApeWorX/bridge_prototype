@@ -18,7 +18,11 @@ struct TransferInfo {
 
 contract Connext {
 	uint256 internal nonce;
-	uint32 internal domain;
+	uint32  internal domain;
+
+	constructor(uint32 _domain) {
+		domain = _domain;
+	}
 
 	event XCalled(
 	    bytes32 indexed transferId,

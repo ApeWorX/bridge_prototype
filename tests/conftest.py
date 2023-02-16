@@ -21,53 +21,32 @@ def bridge(owner):
 
 @pytest.fixture(scope="session")
 def contracts(project, owner, bridge):
-    @dataclass
-    class Contracts:
-        Ping: "Contract" = None
-        Pong: "Contract" = None
+    with bridge.use_network(NETWORK_PING) as provider:
+        ping = owner.deploy(project.Ping, bridge.connext.address, owner)
+        bridge.register_contract(ping)
 
-    contracts = Contracts()
+        ping_network_id = provider.network.network_id
 
-    with bridge.connect(NETWORK_PING):
-        contracts.Ping = owner.deploy(
-            project.Ping,
-            bridge.at(NETWORK_PING),
-            owner,
-        )
+    with bridge.use_network(NETWORK_PONG) as provider:
+        pong = owner.deploy(project.Pong, bridge.connext.address, owner)
+        bridge.register_contract(pong)
 
-        bridge.register(NETWORK_PING, contracts.Ping)
+        pong_network_id = provider.network.network_id
 
-    with bridge.connect(NETWORK_PONG):
-        contracts.Pong = owner.deploy(
-            project.Pong,
-            bridge.at(NETWORK_PONG),
-            owner,
-        )
+    with bridge.use_network(NETWORK_PING):
+        ping.authenticate(pong_network_id, pong.address, sender=owner)
 
-        bridge.register(NETWORK_PONG, contracts.Pong)
+    with bridge.use_network(NETWORK_PONG):
+        pong.authenticate(ping_network_id, ping.address, sender=owner)
 
-    with bridge.connect(NETWORK_PING):
-        contracts.Ping.authenticate(
-            bridge.networks[NETWORK_PONG].provider.network.network_id,
-            contracts.Pong.address,
-            sender=owner,
-        )
-
-    with bridge.connect(NETWORK_PONG):
-        contracts.Ping.authenticate(
-            bridge.networks[NETWORK_PING].provider.network.network_id,
-            contracts.Ping.address,
-            sender=owner,
-        )
-
-    return contracts
+    return ping, pong
 
 
 @pytest.fixture(scope="session")
 def ping(contracts):
-    return contracts.Ping
+    return contracts[0]
 
 
 @pytest.fixture(scope="session")
 def pong(contracts):
-    return contracts.Pong
+    return contracts[1]
