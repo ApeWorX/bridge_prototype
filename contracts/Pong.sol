@@ -17,7 +17,7 @@ contract Pong is IXReceiver {
 	}
 
 	modifier isAuthenticated() {
-		require(msg.sender == owner);
+		require(msg.sender == owner, "Unauthorized sender");
 		_;
 	}
 
@@ -36,7 +36,7 @@ contract Pong is IXReceiver {
 		authenticatedSender = _sender;
 	}
 
-	function sendPong() external isAuthenticated() {
+	function sendPong() internal {
 		connext.xcall{value: 0}(
 			authenticatedDomain,
 			authenticatedSender,
@@ -57,5 +57,6 @@ contract Pong is IXReceiver {
 	    bytes memory /* _callData */
 	) external isBridgeAuthenticated(_origin, _sender) returns (bytes memory) {
 		pings++;
+		sendPong();
 	}
 }

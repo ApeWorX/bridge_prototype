@@ -92,12 +92,6 @@ class ConnextBridge:
 
         return self.networks[network_name].connext.address
 
-    def provider(self, network_name: str) -> "Provider":
-        if network_name not in self.networks:
-            raise ValueError
-
-        return ProviderContextManager(provider=self.networks[network_name].provider)
-
     @contextmanager
     def connect(self, network_name: str):
         if network_name not in self.networks:
@@ -122,7 +116,7 @@ class ConnextBridge:
                 if event_name != network.connext.XCalled.name:
                     continue
 
-                transfer_id = event_args["transferId"]
+                transfer_id = HexBytes(event_args["transferId"])
                 if transfer_id in network.processed_events:
                     continue
 
@@ -159,7 +153,9 @@ class ConnextBridge:
                 if to_addr not in destination_network.contracts:
                     raise ValueError(f"Unhandled address {str(to_addr)}")
 
-                with ProviderContextManager(provider=destination_network.provider):
+                network.processed_events.add(transfer_id)
+
+                with self.connect(destination_network.provider.network.name):
                     from ape import accounts
 
                     destination_network.contracts[to_addr].xReceive(
