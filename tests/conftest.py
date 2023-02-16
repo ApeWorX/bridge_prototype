@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 import pytest
 
 from .utils import ConnextBridge

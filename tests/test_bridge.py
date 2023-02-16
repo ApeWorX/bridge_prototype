@@ -1,5 +1,3 @@
-import pytest
-
 from tests.conftest import NETWORK_PING, NETWORK_PONG
 
 
