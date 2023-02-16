@@ -2,9 +2,6 @@ name: Bridge Example
 plugins:
   - name: solidity
   - name: hardhat
-hardhat:
-  port: auto
-  gas_limit: max
 dependencies:
   - name: Connext
     github: connext/monorepo
